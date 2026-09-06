@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+	<meta name="generator" content="Hugo 0.165.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rules skill</title>
+    
+    <meta name="description" content="Bazel rules and validation for Codex skills" />
+     
+    <meta name="github-repo" content="https://github.com/alwaldend/src" />
+      
+    <link rel="stylesheet" href="/scss/landing.min.757a78e91e368eeac2f0cb4833153359a2f027c8e1ec3cf51681f3f623b018da.css" />
+     
+  </head>
+  <body>
+    <header class="landing-topbar">
+      <a class="landing-brand" href="/">Rules Skill</a>
+      <nav class="landing-nav" aria-label="Project links">
+        
+        <a href="https://alwaldend.com/docs/projects/rules_skill/">Docs</a>
+        
+        <a href="https://github.com/alwaldend/src">Github</a>
+        
+      </nav>
+    </header>
+    <main class="landing-container">
+      <div class="landing-header">
+        <h1>Rules skill</h1>
+        <div class="btn-group" role="group" aria-label="Project links">
+          
+          <a class="btn btn-outline-primary" href="https://alwaldend.com/docs/projects/rules_skill/">Docs</a>
+          
+          <a class="btn btn-outline-primary" href="https://github.com/alwaldend/src">Github</a>
+          
+        </div>
+      </div>
+      
+      <p class="landing-description">Bazel rules and validation for Codex skills</p>
+       
+      <p class="landing-meta">Built with bzl, go.</p>
+      
+      <div class="landing-readme"><p><code>rules_skill</code> packages all files belonging to a Codex skill and validates its
+instructions and optional OpenAI metadata with a hermetic Bazel aspect.</p>
+<h2 id="getting-started">Getting started</h2>
+<p>Add the module and register the validation aspect:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-starlark" data-lang="starlark"><span style="display:flex;"><span>bazel_dep(name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;rules_skill&#34;</span>, version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&lt;VERSION&gt;&#34;</span>)
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>build --aspects @rules_skill//skill:defs.bzl%skill_validation_aspect
+</span></span><span style="display:flex;"><span>build --output_groups=+skill_validation
+</span></span></code></pre></div><p>Declare one library in the skill&rsquo;s named, non-root package:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-starlark" data-lang="starlark"><span style="display:flex;"><span>load(<span style="color:#e6db74">&#34;@rules_skill//skill:defs.bzl&#34;</span>, <span style="color:#e6db74">&#34;skill_library&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>skill_library(
+</span></span><span style="display:flex;"><span>    name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;skill&#34;</span>,
+</span></span><span style="display:flex;"><span>    srcs <span style="color:#f92672">=</span> glob(
+</span></span><span style="display:flex;"><span>        [<span style="color:#e6db74">&#34;**&#34;</span>],
+</span></span><span style="display:flex;"><span>        exclude <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;BUILD.bazel&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;BUILD&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;evals/**&#34;</span>,
+</span></span><span style="display:flex;"><span>        ],
+</span></span><span style="display:flex;"><span>    ),
+</span></span><span style="display:flex;"><span>)
+</span></span></code></pre></div><p>The package&rsquo;s final path segment is the skill name, so a <code>skill_library</code>
+cannot be declared in a repository root package. Move a root-level skill into
+a named subpackage before declaring it.</p>
+<p>Building the library materializes the <code>skill_validation</code> output group. The
+aspect checks <code>SKILL.md</code>, verifies that the frontmatter name matches its
+package directory, and validates <code>agents/openai.yaml</code> when it is present.</p>
+<h2 id="consuming-a-skill">Consuming a skill</h2>
+<p>Rules that install or evaluate skills can require the public <code>SkillInfo</code>
+provider:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-starlark" data-lang="starlark"><span style="display:flex;"><span>load(<span style="color:#e6db74">&#34;@rules_skill//skill:defs.bzl&#34;</span>, <span style="color:#e6db74">&#34;SkillInfo&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>attrs <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;skill&#34;</span>: attr<span style="color:#f92672">.</span>label(providers <span style="color:#f92672">=</span> [SkillInfo]),
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p><code>SkillInfo</code> exposes these fields:</p>
+<ul>
+<li><code>name</code> is the logical skill name derived from the final segment of <code>root</code>.
+The validation aspect verifies that the <code>SKILL.md</code> frontmatter uses the same
+name.</li>
+<li><code>root</code> is the owning Bazel package path within the skill&rsquo;s repository, such
+as <code>projects/agents/skills/answer-question</code>. It has no repository,
+execution-path, or runfiles prefix. It is always non-empty because
+repository root packages are unsupported.</li>
+<li><code>files_by_path</code> maps slash-separated paths relative to <code>root</code> to Bazel
+<code>File</code> values. It includes <code>SKILL.md</code>, preserves nested paths such as
+<code>agents/openai.yaml</code>, and has the same shape for source and generated files.</li>
+<li><code>files</code> remains the <code>depset</code> of all skill files. <code>skill</code> is the distinguished
+<code>SKILL.md</code> file, and <code>openai_yaml</code> is the optional distinguished
+<code>agents/openai.yaml</code> file.</li>
+</ul>
+<p>Consumers should use <code>files_by_path</code> when staging a bundle instead of parsing
+<code>File.path</code> or <code>File.short_path</code>. Every source must belong to the skill&rsquo;s Bazel
+package, and duplicate logical paths are rejected during analysis.</p>
+<h2 id="maintaining-source-tree-discovery-links">Maintaining source-tree discovery links</h2>
+<p>Use <code>skill_discovery_links</code> when a repository exposes canonical skill
+directories through a local discovery index such as <code>.agents/skills</code>. Pass
+the <code>skill_library</code> labels directly; the BUILD declaration is the complete
+source of truth, so there is no separate link manifest or configuration file.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-starlark" data-lang="starlark"><span style="display:flex;"><span>load(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;@rules_skill//skill:defs.bzl&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;skill_discovery_links&#34;</span>,
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>skill_discovery_links(
+</span></span><span style="display:flex;"><span>    name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;write_skill_links&#34;</span>,
+</span></span><span style="display:flex;"><span>    skills <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;//projects/agents/skills/answer-question:skill&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;//projects/example/skills/example:skill&#34;</span>,
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>)
+</span></span></code></pre></div><p>Reconcile the checkout with the runnable target:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>bazel run //:write_skill_links
+</span></span></code></pre></div><p>The macro also declares <code>//:write_skill_links_test</code>. That local, uncached test
+reads the source checkout and requires the discovery directory to contain
+exactly the skill names passed in BUILD, each as a direct relative symlink to
+its canonical <code>SkillInfo.root</code>. It rejects missing, stale, extra, absolute, or
+indirect links. Run the updater before the test after changing the label list:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>bazel test //:write_skill_links_test
+</span></span></code></pre></div><p>Both targets intentionally accept only source <code>SKILL.md</code> files from the same
+repository. The exact-state test is a pinned-local checkout check rather than
+a hermetic or remotely executable test: it resolves a source runfile back to
+the workspace and then inspects the local symlinks. The generated programs
+require Bash and POSIX symlink support and work on ordinary Linux and macOS
+checkouts; native Windows checkouts are not supported.</p>
+<p>The updater holds a sibling <code>&lt;discovery_dir&gt;.lock</code> directory while it changes
+links, so concurrent declarations cannot produce a mixed set. A process killed
+without running its exit trap can leave that lock behind; after confirming no
+updater is active, remove the empty lock directory and rerun the updater. The
+exact-state test detects any interrupted partial reconciliation.</p>
+</div>
+    </main>
+    <footer class="landing-footer">
+      <p>Generated from the project README.</p>
+    </footer>
+  </body>
+</html>
